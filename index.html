@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trening Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a2e;
+    --surface2: #22223a;
+    --accent: #6c63ff;
+    --accent-hover: #5a52e0;
+    --green: #2ecc71;
+    --green-bg: rgba(46,204,113,0.08);
+    --danger: #e74c3c;
+    --danger-hover: #c0392b;
+    --text: #e0e0e0;
+    --text-muted: #888;
+    --border: #2a2a3e;
+    --radius: 10px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    padding-bottom: 5rem;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.25rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+
+  .breadcrumb {
+    display: flex; align-items: center; gap: 0.4rem;
+    margin-top: 0.4rem; font-size: 0.85rem; color: var(--text-muted); flex-wrap: wrap;
+  }
+  .breadcrumb span { cursor: pointer; }
+  .breadcrumb span:hover { color: var(--accent); }
+  .breadcrumb .sep { cursor: default; }
+  .breadcrumb .current { color: var(--text); cursor: default; font-weight: 600; }
+
+  .container { max-width: 700px; margin: 0 auto; padding: 1rem; }
+
+  /* --- Bottom tabs --- */
+  .tab-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 10;
+  }
+  .tab-bar button {
+    flex: 1; background: none; border: none; color: var(--text-muted);
+    padding: 0.7rem 0; font-size: 0.7rem; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
+    transition: color 0.15s;
+  }
+  .tab-bar button:hover { color: var(--text); }
+  .tab-bar button.active { color: var(--accent); }
+  .tab-bar button svg { width: 22px; height: 22px; }
+
+  /* --- Cards --- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.15rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card:active { transform: scale(0.99); }
+  .card-info { flex: 1; min-width: 0; }
+  .card-title { font-weight: 600; font-size: 1rem; margin-bottom: 0.2rem; }
+  .card-sub { font-size: 0.8rem; color: var(--text-muted); }
+
+  .btn-icon {
+    background: none; border: none; color: var(--text-muted); font-size: 1.2rem;
+    cursor: pointer; padding: 0.4rem; border-radius: 6px; flex-shrink: 0; line-height: 1;
+    transition: background 0.15s, color 0.15s;
+  }
+  .btn-icon:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+  .btn-icon.danger { color: var(--danger); }
+  .btn-icon.danger:hover { background: rgba(231,76,60,0.15); }
+
+  /* --- Forms --- */
+  .add-form {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  input, select {
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  .add-form input { flex: 1; min-width: 0; }
+
+  .btn {
+    padding: 0.6rem 1.2rem; border: none; border-radius: 8px;
+    background: var(--accent); color: #fff; font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; transition: background 0.15s; white-space: nowrap;
+  }
+  .btn:hover { background: var(--accent-hover); }
+  .btn.green { background: var(--green); }
+  .btn.green:hover { background: #27ae60; }
+  .btn.outline {
+    background: transparent; border: 1px solid var(--border); color: var(--text);
+  }
+  .btn.outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  .empty { text-align: center; color: var(--text-muted); padding: 3rem 1rem; font-size: 0.95rem; }
+
+  /* --- Exercise block in workout view --- */
+  .exercise-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+
+  .exercise-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .exercise-header:hover { background: rgba(255,255,255,0.02); }
+  .exercise-name { font-weight: 700; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.02em; }
+  .exercise-actions { display: flex; gap: 0.25rem; }
+
+  .exercise-body { padding: 0; }
+
+  /* --- History table --- */
+  .history-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 400px;
+  }
+
+  .history-table th {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-muted); text-align: center; padding: 0.5rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .history-table th:first-child { text-align: left; padding-left: 1rem; }
+
+  .history-table td {
+    padding: 0.45rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .history-table td:first-child {
+    text-align: left; padding-left: 1rem; font-weight: 600; color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  .history-table tr:last-child td { border-bottom: none; }
+
+  .entry-cell {
+    font-weight: 600;
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+  .entry-kg { color: var(--accent); }
+  .entry-reps { color: var(--text); }
+
+  .entry-cell.improved { color: var(--green); }
+
+  .entry-del {
+    font-size: 0.7rem; color: var(--danger); cursor: pointer;
+    opacity: 0; transition: opacity 0.15s; margin-left: 0.2rem;
+  }
+  .history-table td:hover .entry-del { opacity: 1; }
+
+  /* --- Add entry form --- */
+  .add-entry {
+    display: flex; gap: 0.5rem; padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+    flex-wrap: wrap; align-items: center;
+  }
+
+  .add-entry label {
+    font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .add-entry input {
+    width: 4.5rem; text-align: center; padding: 0.45rem 0.4rem; font-size: 0.85rem;
+  }
+
+  .add-entry .sets-group {
+    display: flex; gap: 0.3rem; align-items: center; flex-wrap: wrap;
+  }
+
+  .add-entry .btn { padding: 0.45rem 0.8rem; font-size: 0.8rem; }
+
+  .reps-input {
+    width: 3rem !important; text-align: center; padding: 0.4rem 0.2rem !important;
+    font-size: 0.85rem;
+  }
+
+  .add-set-btn {
+    background: none; border: 1px dashed var(--border); color: var(--text-muted);
+    border-radius: 6px; padding: 0.35rem 0.6rem; cursor: pointer; font-size: 0.8rem;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .add-set-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .type-badge {
+    display: inline-block;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+    font-weight: 600;
+    vertical-align: middle;
+  }
+  .type-badge.cardio { background: rgba(231,76,60,0.2); color: #e74c3c; }
+  .type-badge.strength { background: rgba(108,99,255,0.2); color: var(--accent); }
+
+  .add-form select {
+    padding: 0.6rem 0.8rem;
+    min-width: 100px;
+  }
+
+  .section-title {
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-muted); margin-bottom: 0.6rem; margin-top: 0.5rem;
+  }
+
+  /* Confirm dialog */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100;
+    display: flex; align-items: center; justify-content: center; padding: 1rem;
+  }
+  .dialog {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.5rem; max-width: 350px; width: 100%;
+    text-align: center;
+  }
+  .dialog p { margin-bottom: 1rem; font-size: 0.95rem; }
+  .dialog-btns { display: flex; gap: 0.6rem; justify-content: center; }
+
+  /* ========= HABITS ========= */
+  .week-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .week-nav .btn { padding: 0.45rem 0.8rem; font-size: 0.85rem; }
+  .week-label { font-weight: 600; font-size: 0.95rem; }
+
+  .habits-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 1.25rem;
+  }
+
+  .habits-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 480px;
+  }
+
+  .habits-table th {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-muted); padding: 0.6rem 0.4rem;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+  }
+  .habits-table th:first-child {
+    text-align: left; padding-left: 1rem; min-width: 140px;
+  }
+  .habits-table th.today { color: var(--accent); }
+
+  .habits-table td {
+    padding: 0.5rem 0.4rem;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    vertical-align: middle;
+  }
+  .habits-table td:first-child {
+    text-align: left; padding-left: 1rem;
+    font-weight: 600; font-size: 0.9rem;
+  }
+  .habits-table tr:last-child td { border-bottom: none; }
+
+  .habits-table td.del-cell {
+    padding: 0.3rem;
+  }
+
+  .habit-cb {
+    width: 28px; height: 28px;
+    accent-color: var(--green);
+    cursor: pointer;
+  }
+
+  .habit-streak {
+    display: inline-block;
+    font-size: 0.75rem;
+    color: var(--green);
+    margin-left: 0.4rem;
+    font-weight: 400;
+  }
+
+  .habit-name-cell {
+    display: flex; align-items: center; gap: 0.3rem;
+  }
+  .habit-name-cell .btn-icon { font-size: 0.85rem; padding: 0.25rem; color: var(--text-muted); }
+
+  .day-toggles {
+    display: flex; gap: 0.3rem; padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    align-items: center; flex-wrap: wrap;
+  }
+  .day-toggle {
+    width: 2.2rem; height: 2rem;
+    border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg); color: var(--text-muted);
+    font-size: 0.7rem; font-weight: 600; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .day-toggle.active {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+  }
+  .day-toggle:hover { border-color: var(--accent); }
+
+  .habit-cell-off {
+    color: var(--border); font-size: 0.8rem;
+  }
+
+  .habit-progress {
+    display: flex; align-items: center; gap: 0.75rem;
+    margin-bottom: 1rem; flex-wrap: wrap;
+  }
+  .habit-progress-bar {
+    flex: 1; min-width: 120px; height: 8px;
+    background: var(--surface2); border-radius: 4px; overflow: hidden;
+  }
+  .habit-progress-fill {
+    height: 100%; background: var(--green); border-radius: 4px;
+    transition: width 0.3s;
+  }
+  .habit-progress-text {
+    font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Trening Tracker</h1>
+  <div class="breadcrumb" id="breadcrumb"></div>
+</header>
+
+<div class="container" id="app"></div>
+
+<!-- Bottom tab bar -->
+<div class="tab-bar" id="tabbar">
+  <button id="tab-treningi" onclick="switchTab('treningi')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    Treningi
+  </button>
+  <button id="tab-nawyki" onclick="switchTab('nawyki')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    Nawyki
+  </button>
+</div>
+
+<script>
+// ===================== STORAGE =====================
+const KEY = 'tt_data_v2';
+const HABITS_KEY = 'tt_habits';
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || { templates: [] }; }
+  catch { return { templates: [] }; }
+}
+function save(d) {
+  localStorage.setItem(KEY, JSON.stringify(d));
+  // Sync to Redis in background
+  fetch('/api/data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(d)
+  }).catch(() => {});
+}
+
+function loadHabits() {
+  try { return JSON.parse(localStorage.getItem(HABITS_KEY)) || { habits: [], checks: {} }; }
+  catch { return { habits: [], checks: {} }; }
+}
+function saveHabits(d) {
+  localStorage.setItem(HABITS_KEY, JSON.stringify(d));
+  // Sync to Redis in background
+  fetch('/api/habits', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(d)
+  }).catch(() => {});
+}
+
+// Pull data from Redis on page load (overrides localStorage if server has data)
+async function syncFromServer() {
+  try {
+    const [dataRes, habitsRes] = await Promise.all([
+      fetch('/api/data'),
+      fetch('/api/habits')
+    ]);
+    if (dataRes.ok) {
+      const data = await dataRes.json();
+      if (data && data.templates && data.templates.length > 0) {
+        localStorage.setItem(KEY, JSON.stringify(data));
+      }
+    }
+    if (habitsRes.ok) {
+      const habits = await habitsRes.json();
+      if (habits && habits.habits && habits.habits.length > 0) {
+        localStorage.setItem(HABITS_KEY, JSON.stringify(habits));
+      }
+    }
+    renderAll();
+  } catch (e) {
+    // Offline — use localStorage, no problem
+  }
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function fmtDate(s) {
+  if (!s) return '';
+  const [y,m,d] = s.split('-');
+  return `${d}.${m}`;
+}
+
+let currentTab = 'treningi';
+let state = { view: 'templates', templateId: null };
+let habitsWeekOffset = 0; // 0 = current week, -1 = last week, etc.
+
+// ===================== TAB SWITCHING =====================
+
+function switchTab(tab) {
+  currentTab = tab;
+  if (tab === 'treningi') {
+    state = { view: 'templates', templateId: null };
+  }
+  renderAll();
+}
+
+function renderAll() {
+  document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
+  const activeBtn = document.getElementById('tab-' + currentTab);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  if (currentTab === 'treningi') {
+    render();
+  } else if (currentTab === 'nawyki') {
+    renderHabitsPage();
+  }
+}
+
+// ===================== RENDER (TRENINGI) =====================
+
+function render() {
+  const data = load();
+  const app = document.getElementById('app');
+  const bc = document.getElementById('breadcrumb');
+
+  if (state.view === 'templates') {
+    bc.innerHTML = '<span class="current">Treningi</span>';
+    renderTemplates(app, data);
+  } else if (state.view === 'workout') {
+    const t = data.templates.find(x => x.id === state.templateId);
+    if (!t) { state.view = 'templates'; render(); return; }
+    bc.innerHTML = `<span onclick="nav('templates')">Treningi</span><span class="sep">/</span><span class="current">${esc(t.name)}</span>`;
+    renderWorkout(app, data, t);
+  }
+}
+
+function nav(view, templateId) {
+  state = { view, templateId: templateId || null };
+  render();
+}
+
+// ===================== TEMPLATES LIST =====================
+
+function renderTemplates(app, data) {
+  let h = `
+    <div class="add-form">
+      <input type="text" id="tName" placeholder="Nazwa treningu (np. Push A)">
+      <button class="btn" onclick="addTemplate()">Dodaj</button>
+    </div>`;
+
+  if (data.templates.length === 0) {
+    h += '<div class="empty">Brak treningów. Dodaj pierwszy!</div>';
+  } else {
+    for (const t of data.templates) {
+      const exCount = t.exercises.length;
+      const lastDate = getLastDate(t);
+      h += `
+        <div class="card" onclick="nav('workout','${t.id}')">
+          <div class="card-info">
+            <div class="card-title">${esc(t.name)}</div>
+            <div class="card-sub">${exCount} ćwiczeń${lastDate ? ' &middot; ostatni: '+fmtDate(lastDate) : ''}</div>
+          </div>
+          <button class="btn-icon danger" onclick="event.stopPropagation(); deleteTemplate('${t.id}')" title="Usuń">&times;</button>
+        </div>`;
+    }
+  }
+  app.innerHTML = h;
+  const inp = document.getElementById('tName');
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') addTemplate(); });
+}
+
+function getLastDate(t) {
+  let last = '';
+  for (const ex of t.exercises) {
+    for (const en of ex.entries || []) {
+      if (en.date > last) last = en.date;
+    }
+  }
+  return last;
+}
+
+function addTemplate() {
+  const name = document.getElementById('tName').value.trim();
+  if (!name) return;
+  const data = load();
+  data.templates.push({ id: uid(), name, exercises: [] });
+  save(data);
+  render();
+}
+
+function deleteTemplate(id) {
+  showConfirm('Usunąć ten trening i całą historię?', () => {
+    const data = load();
+    data.templates = data.templates.filter(t => t.id !== id);
+    save(data);
+    render();
+  });
+}
+
+// ===================== WORKOUT VIEW =====================
+
+function renderWorkout(app, data, t) {
+  let h = `
+    <div class="add-form">
+      <input type="text" id="exName" placeholder="Dodaj ćwiczenie (np. POZIOMA)" style="flex:1">
+      <select id="exType">
+        <option value="strength">Siłowe</option>
+        <option value="cardio">Cardio</option>
+      </select>
+      <button class="btn" onclick="addExercise('${t.id}')">Dodaj</button>
+    </div>`;
+
+  if (t.exercises.length === 0) {
+    h += '<div class="empty">Brak ćwiczeń. Dodaj pierwsze!</div>';
+  }
+
+  for (const ex of t.exercises) {
+    h += renderExerciseBlock(t, ex);
+  }
+
+  app.innerHTML = h;
+
+  const inp = document.getElementById('exName');
+  if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') addExercise(t.id); });
+}
+
+function renderExerciseBlock(t, ex) {
+  const entries = ex.entries || [];
+  const isCardio = ex.type === 'cardio';
+  const badgeClass = isCardio ? 'cardio' : 'strength';
+  const badgeText = isCardio ? 'Cardio' : 'Siłowe';
+
+  let h = `<div class="exercise-block" id="ex-${ex.id}">
+    <div class="exercise-header">
+      <span class="exercise-name">${esc(ex.name)}<span class="type-badge ${badgeClass}">${badgeText}</span></span>
+      <div class="exercise-actions">
+        <button class="btn-icon danger" onclick="event.stopPropagation(); deleteExercise('${t.id}','${ex.id}')" title="Usuń ćwiczenie">&times;</button>
+      </div>
+    </div>
+    <div class="exercise-body">`;
+
+  if (entries.length > 0) {
+    if (isCardio) {
+      h += `<div class="history-scroll"><table class="history-table">
+        <thead><tr>
+          <th>Data</th>
+          <th>Czas</th>
+          <th>Poziom</th>
+          <th></th>
+        </tr></thead><tbody>`;
+
+      const sorted = [...entries].reverse();
+      for (const en of sorted) {
+        const improvedCardio = isImprovedCardio(entries, en);
+        h += `<tr>
+          <td>${fmtDate(en.date)}</td>
+          <td class="entry-cell ${improvedCardio ? 'improved' : ''}">${en.time} min</td>
+          <td class="entry-cell ${improvedCardio ? 'improved' : ''}">${en.level}</td>
+          <td>
+            <span class="entry-del" onclick="deleteEntry('${t.id}','${ex.id}','${en.id}')">&times;</span>
+          </td>
+        </tr>`;
+      }
+      h += '</tbody></table></div>';
+    } else {
+      h += `<div class="history-scroll"><table class="history-table">
+        <thead><tr>
+          <th>Data</th>
+          <th>Obciążenie</th>
+          <th>Serie × Powtórzenia</th>
+          <th></th>
+        </tr></thead><tbody>`;
+
+      const sorted = [...entries].reverse();
+      for (const en of sorted) {
+        const repsStr = en.reps.join(' / ');
+        const improved = isImproved(entries, en);
+        h += `<tr>
+          <td>${fmtDate(en.date)}</td>
+          <td class="entry-cell"><span class="entry-kg">${en.kg} kg</span></td>
+          <td class="entry-cell ${improved ? 'improved' : ''}">
+            ${en.reps.length}×[${repsStr}]
+          </td>
+          <td>
+            <span class="entry-del" onclick="deleteEntry('${t.id}','${ex.id}','${en.id}')">&times;</span>
+          </td>
+        </tr>`;
+      }
+      h += '</tbody></table></div>';
+    }
+  }
+
+  if (isCardio) {
+    const lastTime = entries.length ? entries[entries.length - 1].time : '';
+    const lastLevel = entries.length ? entries[entries.length - 1].level : '';
+    h += `<div class="add-entry" data-tid="${t.id}" data-exid="${ex.id}">
+        <div>
+          <label>Czas (min)</label><br>
+          <input type="number" min="0" step="1" class="entry-time-input" value="${lastTime}">
+        </div>
+        <div>
+          <label>Poziom</label><br>
+          <input type="number" min="0" step="1" class="entry-level-input" value="${lastLevel}">
+        </div>
+        <div style="align-self:flex-end">
+          <button class="btn green" onclick="saveCardioEntry(this)">Zapisz</button>
+        </div>
+      </div>`;
+  } else {
+    h += `<div class="add-entry" data-tid="${t.id}" data-exid="${ex.id}">
+        <div>
+          <label>Kg</label><br>
+          <input type="number" min="0" step="0.25" class="entry-kg-input" value="${getLastKg(entries)}">
+        </div>
+        <div style="flex:1">
+          <label>Powtórzenia (per seria)</label><br>
+          <div class="sets-group">
+            ${buildRepsInputs(entries)}
+            <button class="add-set-btn" onclick="addRepInput(this)">+</button>
+          </div>
+        </div>
+        <div style="align-self:flex-end">
+          <button class="btn green" onclick="saveEntry(this)">Zapisz</button>
+        </div>
+      </div>`;
+  }
+
+  h += `</div></div>`;
+  return h;
+}
+
+function getLastKg(entries) {
+  if (entries.length === 0) return 0;
+  return entries[entries.length - 1].kg;
+}
+
+function buildRepsInputs(entries) {
+  let count = 3;
+  let vals = [];
+  if (entries.length > 0) {
+    const last = entries[entries.length - 1];
+    count = last.reps.length;
+    vals = last.reps;
+  }
+  let h = '';
+  for (let i = 0; i < count; i++) {
+    h += `<input type="number" min="0" class="reps-input" value="${vals[i] || ''}" placeholder="${i+1}">`;
+  }
+  return h;
+}
+
+function addRepInput(btn) {
+  const inp = document.createElement('input');
+  inp.type = 'number';
+  inp.min = '0';
+  inp.className = 'reps-input';
+  inp.placeholder = btn.parentElement.querySelectorAll('.reps-input').length + 1;
+  btn.parentElement.insertBefore(inp, btn);
+  inp.focus();
+}
+
+function isImproved(entries, entry) {
+  const idx = entries.indexOf(entry);
+  if (idx <= 0) return false;
+  const prev = entries[idx - 1];
+  const curVol = entry.kg * entry.reps.reduce((a,b) => a+b, 0);
+  const prevVol = prev.kg * prev.reps.reduce((a,b) => a+b, 0);
+  return curVol > prevVol;
+}
+
+function saveEntry(btn) {
+  const form = btn.closest('.add-entry');
+  const tId = form.dataset.tid;
+  const exId = form.dataset.exid;
+  const kg = parseFloat(form.querySelector('.entry-kg-input').value) || 0;
+  const repsInputs = form.querySelectorAll('.reps-input');
+  const reps = [];
+  repsInputs.forEach(inp => {
+    const v = parseInt(inp.value);
+    if (v > 0) reps.push(v);
+  });
+
+  if (reps.length === 0) return;
+
+  const data = load();
+  const t = data.templates.find(x => x.id === tId);
+  if (!t) return;
+  const ex = t.exercises.find(x => x.id === exId);
+  if (!ex) return;
+  if (!ex.entries) ex.entries = [];
+
+  ex.entries.push({ id: uid(), date: todayStr(), kg, reps });
+  save(data);
+  render();
+}
+
+function saveCardioEntry(btn) {
+  const form = btn.closest('.add-entry');
+  const tId = form.dataset.tid;
+  const exId = form.dataset.exid;
+  const time = parseFloat(form.querySelector('.entry-time-input').value) || 0;
+  const level = parseFloat(form.querySelector('.entry-level-input').value) || 0;
+
+  if (time <= 0) return;
+
+  const data = load();
+  const t = data.templates.find(x => x.id === tId);
+  if (!t) return;
+  const ex = t.exercises.find(x => x.id === exId);
+  if (!ex) return;
+  if (!ex.entries) ex.entries = [];
+
+  ex.entries.push({ id: uid(), date: todayStr(), time, level });
+  save(data);
+  render();
+}
+
+function isImprovedCardio(entries, entry) {
+  const idx = entries.indexOf(entry);
+  if (idx <= 0) return false;
+  const prev = entries[idx - 1];
+  return (entry.time > prev.time) || (entry.time === prev.time && entry.level > prev.level);
+}
+
+function deleteEntry(tId, exId, enId) {
+  const data = load();
+  const t = data.templates.find(x => x.id === tId);
+  if (!t) return;
+  const ex = t.exercises.find(x => x.id === exId);
+  if (!ex) return;
+  ex.entries = (ex.entries || []).filter(e => e.id !== enId);
+  save(data);
+  render();
+}
+
+function addExercise(tId) {
+  const name = document.getElementById('exName').value.trim();
+  const type = document.getElementById('exType').value;
+  if (!name) return;
+  const data = load();
+  const t = data.templates.find(x => x.id === tId);
+  if (!t) return;
+  t.exercises.push({ id: uid(), name, type: type || 'strength', entries: [] });
+  save(data);
+  render();
+}
+
+function deleteExercise(tId, exId) {
+  showConfirm('Usunąć ćwiczenie i całą jego historię?', () => {
+    const data = load();
+    const t = data.templates.find(x => x.id === tId);
+    if (!t) return;
+    t.exercises = t.exercises.filter(e => e.id !== exId);
+    save(data);
+    render();
+  });
+}
+
+// ===================== HABITS =====================
+
+const DAY_NAMES = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Ndz'];
+
+function getWeekDates(offset) {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + mondayOffset + offset * 7);
+
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    dates.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
+  }
+  return dates;
+}
+
+function renderHabitsPage() {
+  const bc = document.getElementById('breadcrumb');
+  bc.innerHTML = '<span class="current">Nawyki</span>';
+
+  const app = document.getElementById('app');
+  const hData = loadHabits();
+  const weekDates = getWeekDates(habitsWeekOffset);
+  const today = todayStr();
+
+  // Week label
+  const d1 = weekDates[0].split('-');
+  const d2 = weekDates[6].split('-');
+  const weekLabel = `${d1[2]}.${d1[1]} — ${d2[2]}.${d2[1]}.${d2[0]}`;
+
+  // Progress for this week (only count active days)
+  let totalChecks = 0;
+  let doneChecks = 0;
+  for (const habit of hData.habits) {
+    const days = habit.days || [true,true,true,true,true,true,true];
+    for (let i = 0; i < 7; i++) {
+      if (!days[i]) continue;
+      totalChecks++;
+      const key = habit.id + '_' + weekDates[i];
+      if (hData.checks[key]) doneChecks++;
+    }
+  }
+  const pct = totalChecks > 0 ? Math.round(doneChecks / totalChecks * 100) : 0;
+
+  let h = `
+    <div class="add-form">
+      <input type="text" id="habitName" placeholder="Nowy nawyk (np. Medytacja)">
+      <button class="btn" onclick="addHabit()">Dodaj</button>
+    </div>`;
+
+  if (hData.habits.length > 0) {
+    h += `
+    <div class="habit-progress">
+      <div class="habit-progress-bar"><div class="habit-progress-fill" style="width:${pct}%"></div></div>
+      <span class="habit-progress-text">${doneChecks}/${totalChecks} (${pct}%)</span>
+    </div>`;
+  }
+
+  h += `
+    <div class="week-nav">
+      <button class="btn outline" onclick="habitsWeekOffset--; renderAll()">&larr;</button>
+      <span class="week-label">${weekLabel}</span>
+      <button class="btn outline" onclick="habitsWeekOffset++; renderAll()">&rarr;</button>
+    </div>`;
+
+  if (hData.habits.length === 0) {
+    h += '<div class="empty">Brak nawyków. Dodaj pierwszy!</div>';
+  } else {
+    h += `<div class="habits-table-wrap"><table class="habits-table">
+      <thead><tr>
+        <th>Nawyk</th>`;
+
+    for (let i = 0; i < 7; i++) {
+      const isToday = weekDates[i] === today;
+      const parts = weekDates[i].split('-');
+      h += `<th class="${isToday ? 'today' : ''}">${DAY_NAMES[i]}<br>${parts[2]}.${parts[1]}</th>`;
+    }
+    h += '<th></th></tr></thead><tbody>';
+
+    for (const habit of hData.habits) {
+      const streak = calcStreak(hData, habit.id);
+      const days = habit.days || [true,true,true,true,true,true,true];
+      const isEditing = editingHabitDays === habit.id;
+
+      h += `<tr><td><div class="habit-name-cell">
+        <span>${esc(habit.name)}${streak > 1 ? `<span class="habit-streak">${streak}d</span>` : ''}</span>
+        <button class="btn-icon" onclick="event.stopPropagation(); toggleEditDays('${habit.id}')" title="Ustaw dni">&#9881;</button>
+      </div></td>`;
+      for (let i = 0; i < 7; i++) {
+        if (!days[i]) {
+          h += `<td><span class="habit-cell-off">—</span></td>`;
+        } else {
+          const key = habit.id + '_' + weekDates[i];
+          const checked = !!hData.checks[key];
+          h += `<td><input type="checkbox" class="habit-cb" ${checked ? 'checked' : ''} onchange="toggleHabit('${habit.id}','${weekDates[i]}',this.checked)"></td>`;
+        }
+      }
+      h += `<td class="del-cell"><button class="btn-icon danger" onclick="deleteHabit('${habit.id}')" title="Usuń">&times;</button></td>`;
+      h += '</tr>';
+
+      if (isEditing) {
+        h += `<tr><td colspan="${9}"><div class="day-toggles">`;
+        for (let i = 0; i < 7; i++) {
+          h += `<button class="day-toggle ${days[i] ? 'active' : ''}" onclick="toggleHabitDay('${habit.id}',${i})">${DAY_NAMES[i]}</button>`;
+        }
+        h += `</div></td></tr>`;
+      }
+    }
+
+    h += '</tbody></table></div>';
+  }
+
+  app.innerHTML = h;
+  const inp = document.getElementById('habitName');
+  if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') addHabit(); });
+}
+
+function calcStreak(hData, habitId) {
+  const habit = hData.habits.find(h => h.id === habitId);
+  const days = habit && habit.days ? habit.days : [true,true,true,true,true,true,true];
+  let streak = 0;
+  const d = new Date();
+  let skippedToday = false;
+  for (let i = 0; i < 365; i++) {
+    const dayIdx = (d.getDay() + 6) % 7; // 0=Mon
+    const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if (!days[dayIdx]) {
+      // Skip inactive days
+      d.setDate(d.getDate() - 1);
+      continue;
+    }
+    const key = habitId + '_' + ds;
+    if (hData.checks[key]) {
+      streak++;
+    } else {
+      if (i === 0) { d.setDate(d.getDate() - 1); skippedToday = true; continue; }
+      break;
+    }
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
+
+let editingHabitDays = null;
+
+function toggleEditDays(habitId) {
+  editingHabitDays = editingHabitDays === habitId ? null : habitId;
+  renderAll();
+}
+
+function toggleHabitDay(habitId, dayIdx) {
+  const hData = loadHabits();
+  const habit = hData.habits.find(h => h.id === habitId);
+  if (!habit) return;
+  if (!habit.days) habit.days = [true,true,true,true,true,true,true];
+  habit.days[dayIdx] = !habit.days[dayIdx];
+  saveHabits(hData);
+  renderAll();
+}
+
+function addHabit() {
+  const name = document.getElementById('habitName').value.trim();
+  if (!name) return;
+  const hData = loadHabits();
+  hData.habits.push({ id: uid(), name, days: [true,true,true,true,true,true,true] });
+  saveHabits(hData);
+  renderAll();
+}
+
+function deleteHabit(id) {
+  showConfirm('Usunąć nawyk i całą historię?', () => {
+    const hData = loadHabits();
+    hData.habits = hData.habits.filter(h => h.id !== id);
+    // Clean up checks
+    const prefix = id + '_';
+    for (const key of Object.keys(hData.checks)) {
+      if (key.startsWith(prefix)) delete hData.checks[key];
+    }
+    saveHabits(hData);
+    renderAll();
+  });
+}
+
+function toggleHabit(habitId, date, checked) {
+  const hData = loadHabits();
+  const key = habitId + '_' + date;
+  if (checked) {
+    hData.checks[key] = true;
+  } else {
+    delete hData.checks[key];
+  }
+  saveHabits(hData);
+  // Update progress bar without full re-render to keep checkbox state smooth
+  const weekDates = getWeekDates(habitsWeekOffset);
+  let totalChecks = 0;
+  let doneChecks = 0;
+  for (const habit of hData.habits) {
+    const days = habit.days || [true,true,true,true,true,true,true];
+    for (let i = 0; i < 7; i++) {
+      if (!days[i]) continue;
+      totalChecks++;
+      if (hData.checks[habit.id + '_' + weekDates[i]]) doneChecks++;
+    }
+  }
+  const pct = totalChecks > 0 ? Math.round(doneChecks / totalChecks * 100) : 0;
+  const fill = document.querySelector('.habit-progress-fill');
+  const txt = document.querySelector('.habit-progress-text');
+  if (fill) fill.style.width = pct + '%';
+  if (txt) txt.textContent = `${doneChecks}/${totalChecks} (${pct}%)`;
+}
+
+// ===================== CONFIRM DIALOG =====================
+
+function showConfirm(msg, onYes) {
+  const div = document.createElement('div');
+  div.className = 'overlay';
+  div.innerHTML = `<div class="dialog">
+    <p>${esc(msg)}</p>
+    <div class="dialog-btns">
+      <button class="btn outline" id="dlgNo">Anuluj</button>
+      <button class="btn" style="background:var(--danger)" id="dlgYes">Usuń</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+  div.querySelector('#dlgNo').onclick = () => div.remove();
+  div.querySelector('#dlgYes').onclick = () => { div.remove(); onYes(); };
+  div.addEventListener('click', e => { if (e.target === div) div.remove(); });
+}
+
+// ===================== INIT =====================
+renderAll();
+syncFromServer();
+</script>
+</body>
+</html>
